@@ -17,7 +17,7 @@
             label="Auto lock time"
             :hint="autoLockHint"
             persistent-hint
-            max="60"
+            max="300"
             min="0"
           >
           </v-slider>
