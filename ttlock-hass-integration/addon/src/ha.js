@@ -213,6 +213,10 @@ class HomeAssistant {
   async _onLockConnected(lock) {
     await this.configureLock(lock);
     await this.updateLockState(lock);
+
+    // Automatically fetch the lock time to populate the RAM cache
+    // so Home Assistant doesn't blank out the sensor on reboot!
+    manager.getLockTime(lock.getAddress());
   }
 
   /**
