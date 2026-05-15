@@ -873,26 +873,32 @@ class Manager extends EventEmitter {
    */
   async _onLockUpdated(lock, paramsChanged) {
     console.log("lockUpdated", paramsChanged);
-    // if lock has new operations read the operations and send updates
-    if (paramsChanged.newEvents == true && lock.hasNewEvents() && lock.hasProactiveLogFetching()) {
-      if (!lock.isConnected()) {
-        const result = await lock.connect();
-        // TODO: handle failed connection
+    try {
+      // if lock has new operations read the operations and send updates
+      if (paramsChanged.newEvents == true && lock.hasNewEvents() && lock.hasProactiveLogFetching()) {
+        if (!(await this._connectLock(lock))) {
+          return;
+        }
+        await this._processOperationLog(lock);
       }
-      await this._processOperationLog(lock);
-    }
-    if (paramsChanged.lockedStatus == true) {
-      const status = await lock.getLockStatus();
-      if (status == LockedStatus.LOCKED) {
-        console.log(">>>>>> Lock is now locked from new event <<<<<<");
-        this.emit("lockLock", lock);
+      if (paramsChanged.lockedStatus == true) {
+        if (!(await this._connectLock(lock))) {
+          return;
+        }
+        const status = await lock.getLockStatus();
+        if (status == LockedStatus.LOCKED) {
+          console.log(">>>>>> Lock is now locked from new event <<<<<<");
+          this.emit("lockLock", lock);
+        }
       }
+      if (paramsChanged.batteryCapacity == true) {
+        this.emit("lockUpdated", lock);
+      }
+    } catch (error) {
+      console.error("Error handling lock update:", error);
+    } finally {
+      await lock.disconnect().catch(() => {});
     }
-    if (paramsChanged.batteryCapacity == true) {
-      this.emit("lockUpdated", lock);
-    }
-
-    await lock.disconnect();
   }
 
   async _processOperationLog(lock) {
