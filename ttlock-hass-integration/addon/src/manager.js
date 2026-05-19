@@ -711,13 +711,16 @@ class Manager extends EventEmitter {
         }
       } catch (error) {
         console.error(`Error during ${operationName}`, error);
-        if (!lock.isConnected()) {
-          console.log(`Lock disconnected during ${operationName} (error), retrying... (${attempt}/${maxRetries})`);
-          if (attempt < maxRetries) await sleep(1000);
-          continue;
-        } else {
-          return false;
+        // Always force disconnect on error and retry - the connection may be
+        // in a zombie state where isConnected() is true but BLE is actually dead
+        console.log(`Forcing disconnect after ${operationName} error, retrying... (${attempt}/${maxRetries})`);
+        try {
+          await lock.disconnect();
+        } catch (disconnectError) {
+          // ignore disconnect errors
         }
+        if (attempt < maxRetries) await sleep(1000);
+        continue;
       }
     }
     return false;
