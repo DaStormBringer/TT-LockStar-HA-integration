@@ -88,7 +88,9 @@ class Store {
       this.lockData = JSON.parse(lockDataTxt);
     } catch (error) {
       this.lockData = [];
-      console.error(error);
+      if (error.code !== 'ENOENT') {
+        console.error("Error loading lockData.json:", error);
+      }
     }
     try {
       await fs.access(this.settingsPath + "/aliasData.json");
@@ -100,7 +102,9 @@ class Store {
         card: {},
         finger: {}
       };
-      console.error(error);
+      if (error.code !== 'ENOENT') {
+        console.error("Error loading aliasData.json:", error);
+      }
     }
 
     return this.lockData;
