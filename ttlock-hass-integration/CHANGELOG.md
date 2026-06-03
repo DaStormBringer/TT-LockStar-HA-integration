@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.5.5] - 2026-06-03
+- Fix persistent "Failed to set adminPasscode" initialization error by monkey patching the underlying TTLock SDK to treat response code `0` (`ERROR_NONE`) as a successful operation, resolving admin password setup failures.
+
 ## [0.5.4] - 2026-06-03
 - Add support for scanning and pairing a second/subsequent lock via a new "Add / Scan Lock" button in the locks list view
 - Provide a clean way to stop or cancel BLE scans at any time via a "Stop Scan" button (available in the countdown banner, empty state card, and top app bar)

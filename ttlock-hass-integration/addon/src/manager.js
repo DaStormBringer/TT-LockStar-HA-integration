@@ -21,6 +21,18 @@ try {
     console.log(`[MonkeyPatch] TTLock.connect: forcing timeout to ${finalTimeout}s`);
     return originalTTLockConnect.call(this, skipDataRead, finalTimeout);
   };
+
+  const { SetAdminKeyboardPwdCommand } = require("ttlock-sdk-js/dist/api/Commands/SetAdminKeyboardPwdCommand");
+  const originalProcessData = SetAdminKeyboardPwdCommand.prototype.processData;
+  SetAdminKeyboardPwdCommand.prototype.processData = function () {
+    if (originalProcessData) {
+      originalProcessData.call(this);
+    }
+    if (this.commandResponse === 0) {
+      console.log("[MonkeyPatch] SetAdminKeyboardPwdCommand: Mapping response code 0 (ERROR_NONE) to 1 (SUCCESS)");
+      this.commandResponse = 1;
+    }
+  };
 } catch (err) {
   console.error("Failed to apply ttlock-sdk-js monkey patches:", err);
 }
