@@ -182,7 +182,7 @@ class Manager extends EventEmitter {
     const lock = this.newLocks.get(address);
     if (typeof lock != "undefined") {
       if (!(await this._connectLock(lock))) {
-        return false;
+        throw new Error("Failed to connect to lock. Ensure it is close enough and keypad is awake.");
       }
       try {
         let res = await lock.initLock();
@@ -193,13 +193,13 @@ class Manager extends EventEmitter {
           this.emit("lockPaired", lock);
           return true;
         }
-        return false;
+        throw new Error("Failed to initialize lock (invalid response).");
       } catch (error) {
         console.error(error);
-        return false;
+        throw error;
       }
     }
-    return false;
+    throw new Error("Lock not found in scanned list.");
   }
 
   async unlockLock(address) {

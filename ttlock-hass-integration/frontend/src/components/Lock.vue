@@ -2,6 +2,9 @@
   <v-card :loading="busy">
     <v-card-title>
       {{ lock.name }}
+      <v-chip v-if="canPair" color="orange darken-2" dark small class="ml-2 font-weight-bold">
+        Discovered
+      </v-chip>
       <v-spacer></v-spacer>
       <span class="subtitle-2">
         <v-icon v-if="lock.battery > 90">mdi-battery-bluetooth</v-icon>

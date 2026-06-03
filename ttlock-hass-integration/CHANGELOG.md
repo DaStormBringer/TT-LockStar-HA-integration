@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.4] - 2026-06-03
+- Add support for scanning and pairing a second/subsequent lock via a new "Add / Scan Lock" button in the locks list view
+- Provide a clean way to stop or cancel BLE scans at any time via a "Stop Scan" button (available in the countdown banner, empty state card, and top app bar)
+- Display descriptive pairing error feedback in the frontend (such as connection issues or already initialized errors) instead of silently failing
+- Add an orange "Discovered" badge/chip to distinguish unpaired locks in the UI
+- Implement backend `stopScan` WebSocket command API
+- Propagate `initLock` errors to API client rather than swallowing them in the backend manager
+
 ## [0.5.3] - 2026-06-03
 - Increase Bluetooth scan duration from 30 seconds to 60 seconds
 - Add a reactive countdown timer overlay to the frontend Ingress UI showing seconds remaining during a scan

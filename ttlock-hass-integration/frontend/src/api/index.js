@@ -45,6 +45,12 @@ class Api {
     }));
   }
 
+  async stopScan() {
+    this.ws.send(JSON.stringify({
+      type: "stopScan",
+    }));
+  }
+
   async lock(address) {
     this.ws.send(JSON.stringify({
       type: "lock",

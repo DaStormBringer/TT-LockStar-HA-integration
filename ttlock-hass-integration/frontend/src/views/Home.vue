@@ -42,19 +42,69 @@
             </v-btn>
             <div v-else class="text-center">
               <v-progress-circular indeterminate color="blue" size="50" width="5" class="mb-4"></v-progress-circular>
-              <div class="body-1 blue--text font-weight-medium animate-pulse">Scanning nearby BLE devices... ({{ countdown }}s remaining)</div>
+              <div class="body-1 blue--text font-weight-medium animate-pulse mb-4">Scanning nearby BLE devices... ({{ countdown }}s remaining)</div>
+              <v-btn color="red darken-1" dark small rounded v-on:click="stopScan">
+                <v-icon left>mdi-close</v-icon>
+                Cancel Scan
+              </v-btn>
             </div>
           </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- Locks grid when found -->
-    <v-row v-else no-gutters>
-      <v-col v-for="lock in locks" :key="lock.address" lg="3" md="4" sm="12" class="pa-2">
-        <Lock :lock="lock" />
-      </v-col>
-    </v-row>
+    <!-- Locks grid and header when locks exist -->
+    <div v-else style="width: 100%;">
+      <!-- Scanning status banner -->
+      <v-alert
+        v-if="isScanning"
+        type="info"
+        color="blue darken-3"
+        class="mb-6 rounded-lg shadow-premium"
+        elevation="2"
+      >
+        <div class="d-flex align-center justify-space-between flex-wrap">
+          <div class="d-flex align-center">
+            <v-progress-circular indeterminate size="24" width="3" color="white" class="mr-3"></v-progress-circular>
+            <span>Scanning nearby BLE locks... Make sure your lock's keypad is awake.</span>
+          </div>
+          <div class="d-flex align-center">
+            <span class="font-weight-bold subtitle-1 mr-4">{{ countdown }}s remaining</span>
+            <v-btn color="red darken-1" dark small rounded v-on:click="stopScan">
+              <v-icon left>mdi-close</v-icon>
+              Stop Scan
+            </v-btn>
+          </div>
+        </div>
+      </v-alert>
+
+      <!-- Header row for adding locks -->
+      <v-row align="center" class="mb-6 px-2">
+        <v-col>
+          <h2 class="display-1 font-weight-bold white--text">My Locks</h2>
+        </v-col>
+        <v-col class="text-right">
+          <v-btn
+            v-if="!isScanning"
+            color="blue darken-1"
+            dark
+            rounded
+            class="px-6 font-weight-bold shadow-premium"
+            v-on:click="startScan"
+          >
+            <v-icon left>mdi-magnify</v-icon>
+            Add / Scan Lock
+          </v-btn>
+        </v-col>
+      </v-row>
+
+      <!-- Locks grid -->
+      <v-row no-gutters>
+        <v-col v-for="lock in locks" :key="lock.address" lg="3" md="4" sm="12" class="pa-2">
+          <Lock :lock="lock" />
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
 
@@ -92,6 +142,9 @@ export default {
   methods: {
     startScan() {
       this.$store.dispatch("scan");
+    },
+    stopScan() {
+      this.$store.dispatch("stopScan");
     },
     startCountdown() {
       this.stopCountdown();

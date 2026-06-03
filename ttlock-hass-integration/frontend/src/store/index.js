@@ -173,6 +173,9 @@ const store = new Vuex.Store({
       if (state.waiting) return;
       api.scan();
     },
+    async stopScan() {
+      api.stopScan();
+    },
     async unlock({ state, commit }, lockAddress) {
       if (state.waiting) return;
       commit("setWaiting");

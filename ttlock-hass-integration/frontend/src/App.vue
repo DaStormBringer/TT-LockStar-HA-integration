@@ -12,7 +12,9 @@
         <v-btn icon v-on:click="editConfig" :disabled="isScanning" title="Edit locks configuration file">
           <v-icon>mdi-puzzle-edit-outline</v-icon>
         </v-btn>
-        <v-progress-circular v-if="isScanning" indeterminate color="primary"></v-progress-circular>
+        <v-btn v-if="isScanning" icon v-on:click="stopScan" title="Stop BLE scan" color="red lighten-1">
+          <v-icon class="pulse-icon-small">mdi-stop-circle</v-icon>
+        </v-btn>
         <v-btn v-else icon v-on:click="startScan" title="Start BLE scan">
           <v-icon>mdi-sync</v-icon>
         </v-btn>
@@ -91,6 +93,9 @@ export default {
     },
     startScan() {
       this.$store.dispatch("scan");
+    },
+    stopScan() {
+      this.$store.dispatch("stopScan");
     },
     refreshCredentials() {
       const address = this.$store.state.activeLockAddress;

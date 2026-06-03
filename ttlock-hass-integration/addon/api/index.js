@@ -47,10 +47,25 @@ module.exports = async (server) => {
             manager.startScan();
             break;
 
+          case "stopScan": // stop scanning
+            manager.stopScan();
+            break;
+
           case "pair": // pair a lock
             if (msg.data && msg.data.address) {
-              const paired = await manager.initLock(msg.data.address);
-              if (!paired) {
+              try {
+                const paired = await manager.initLock(msg.data.address);
+                if (!paired) {
+                  api.sendError("Pairing failed: Could not initialize lock.", msg);
+                  const locks = manager.getNewVisible();
+                  const lock = locks.get(msg.data.address);
+                  if (lock) {
+                    WsApi.sendLockStatus(wss, lock);
+                  }
+                }
+              } catch (error) {
+                console.error("Pairing error:", error);
+                api.sendError("Pairing error: " + error.message, msg);
                 const locks = manager.getNewVisible();
                 const lock = locks.get(msg.data.address);
                 if (lock) {
