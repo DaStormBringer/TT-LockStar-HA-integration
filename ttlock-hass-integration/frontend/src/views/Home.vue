@@ -100,7 +100,7 @@
 
       <!-- Locks grid -->
       <v-row no-gutters>
-        <v-col v-for="lock in locks" :key="lock.address" lg="3" md="4" sm="12" class="pa-2">
+        <v-col v-for="lock in locks" :key="lock.address" lg="3" md="4" sm="6" cols="12" class="pa-2">
           <Lock :lock="lock" />
         </v-col>
       </v-row>

@@ -1,5 +1,5 @@
 <template>
-  <v-card :loading="busy">
+  <v-card :loading="busy" max-width="450" class="mx-auto mx-sm-0">
     <v-card-title>
       {{ lock.name }}
       <v-chip v-if="canPair" color="orange darken-2" dark small class="ml-2 font-weight-bold">
