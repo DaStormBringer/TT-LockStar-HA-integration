@@ -38,5 +38,7 @@ The TTLock G2 gateway and its firmware remain independent. This add-on does not 
 - Backend JavaScript syntax checks pass with Node.js 24.
 - The Vue production frontend builds successfully. Its warnings are existing Vue 2/Vuetify 2 deprecations, console lint warnings, and bundle-size warnings; there are no compile errors.
 - The pinned SDK resolves as version 0.3.34 and its required lock-time/proactive-log methods are present in the pinned source.
-- A complete Home Assistant add-on image build still belongs in Linux/Docker because Noble is a native Bluetooth dependency and the image target is Alpine Linux. Docker CLI is installed on this workstation, but the Docker Desktop Linux engine was not running during this merge.
+- The complete `amd64` Home Assistant/Alpine image builds successfully in Docker Desktop as `ttlock-local-merged:0.7.0`. The image contains compiled SDK v0.3.34 output and the expected lock-time/proactive-log methods.
+- Loading Noble without host Bluetooth access reaches the expected `EAFNOSUPPORT` socket error. Hardware behavior still requires Home Assistant host networking, D-Bus, and a real Bluetooth adapter; Docker Desktop is not a substitute for that test.
+- `npm audit --omit=dev` reports seven high-severity `tar` advisories through Noble's native installer chain (`bluetooth-hci-socket` -> `node-gyp`/`node-pre-gyp`). No non-breaking upstream fix is offered. Do not apply `npm audit fix --force`; these dependencies should be replaced or isolated in a future SDK/toolchain update.
 - Hardware validation requires an explicit, supervised test with a direct Bluetooth adapter near the lock. No install, pairing, reset, lock, or unlock operation was performed as part of this merge.

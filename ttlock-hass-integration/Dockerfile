@@ -1,7 +1,7 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
 FROM $BUILD_FROM
 
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 
 RUN apk update
 RUN apk add --no-cache nodejs npm python3 py3-pip alpine-sdk libcap bluez bluez-dev eudev-dev
@@ -19,4 +19,4 @@ RUN cd /app && npm i
 
 ENTRYPOINT ["/app/start.sh"]
 
-LABEL io.hass.version="VERSION" io.hass.type="addon" io.hass.arch="armhf|aarch64|i386|amd64"
+LABEL io.hass.version="VERSION" io.hass.type="addon" io.hass.arch="aarch64|amd64"
