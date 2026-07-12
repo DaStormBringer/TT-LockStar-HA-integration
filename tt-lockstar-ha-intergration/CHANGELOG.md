@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.3] - 2026-07-11
+
+- Add an explicitly confirmed cloud-import path after strict validation.
+- Merge imported pairing material by MAC instead of replacing unrelated stored locks.
+- Return only a sanitized import confirmation; raw lock data and keys remain private.
+
 ## [0.1.0-alpha.2] - 2026-07-11
 
 - Added validation-only retrieval of existing lock data from TTLock's official cloud API.

@@ -161,8 +161,19 @@ function validateCloudLockData(value, expectedMac) {
   };
 }
 
+function mergeConvertedLockData(existing, converted) {
+  if (!Array.isArray(existing)) fail('stored lock data is not an array');
+  if (!converted || typeof converted !== 'object') fail('converted lock data is missing');
+  const address = normalizeMac(converted.address);
+  return [
+    ...existing.filter((lock) => normalizeMac(lock.address) !== address),
+    converted,
+  ];
+}
+
 module.exports = {
   convertCloudLockData,
   decodeCloudLockData,
+  mergeConvertedLockData,
   validateCloudLockData,
 };

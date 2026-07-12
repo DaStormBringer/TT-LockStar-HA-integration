@@ -7,7 +7,11 @@ const store = require('../src/store');
 const Message = require("./Message");
 const WsApi = require("./WsApi");
 const { fetchLockData } = require('../src/ttlockCloudApi');
-const { validateCloudLockData } = require('../src/cloudLockData');
+const {
+  convertCloudLockData,
+  mergeConvertedLockData,
+  validateCloudLockData,
+} = require('../src/cloudLockData');
 
 module.exports = async (server) => {
   const wss = new WebSocket.Server({
@@ -285,7 +289,23 @@ module.exports = async (server) => {
                   expectedMac: msg.data.expectedMac,
                 });
                 const validation = validateCloudLockData(lockData, msg.data.expectedMac);
-                api.sendCloudConfigValidation(validation);
+                if (msg.data.import === true) {
+                  if (msg.data.confirmImport !== true) {
+                    throw new Error("Cloud import requires explicit confirmation");
+                  }
+                  const converted = convertCloudLockData(lockData);
+                  const updated = mergeConvertedLockData(store.getLockData(), converted);
+                  store.setLockData(updated);
+                  manager.updateClientLockDataFromStore();
+                  manager.startScan();
+                  api.sendCloudConfigValidation({
+                    ...validation,
+                    imported: true,
+                    storedLockCount: updated.length,
+                  });
+                } else {
+                  api.sendCloudConfigValidation(validation);
+                }
               } catch (error) {
                 api.sendCloudConfigValidation({
                   valid: false,

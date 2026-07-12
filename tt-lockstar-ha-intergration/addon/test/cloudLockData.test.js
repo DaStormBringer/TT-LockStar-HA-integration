@@ -6,6 +6,7 @@ const test = require('node:test');
 
 const {
   convertCloudLockData,
+  mergeConvertedLockData,
   validateCloudLockData,
 } = require('../src/cloudLockData');
 
@@ -101,4 +102,14 @@ test('rejects signed data without supported administrative fields', () => {
     () => convertCloudLockData(buildCloudLockData({ adminPwd: undefined, sign: 'fixture' })),
     /signed lockData without legacy administrative fields/,
   );
+});
+
+test('merges an imported lock without removing other stored locks', () => {
+  const imported = convertCloudLockData(buildCloudLockData());
+  const other = { address: '11:22:33:44:55:66', privateData: {} };
+  const replaced = { ...imported, battery: 1 };
+
+  const merged = mergeConvertedLockData([other, replaced], imported);
+
+  assert.deepEqual(merged, [other, imported]);
 });
