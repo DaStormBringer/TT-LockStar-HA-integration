@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.5] - 2026-07-11
+
+- Stop treating an idle `isUnlock=false` advertisement as proof that this deadbolt is locked.
+- Preserve confirmed state until a successful command response, direct status read, or explicit unlock advertisement changes it.
+- Return explicit errors for failed lock/unlock commands instead of sending misleading cached state.
+
 ## [0.1.0-alpha.4] - 2026-07-11
 
 - Refresh the underlying Noble peripheral object when a known lock is rediscovered.

@@ -85,11 +85,7 @@ module.exports = async (server) => {
             if (msg.data && msg.data.address) {
               const result = await manager.lockLock(msg.data.address);
               if (!result) {
-                const locks = manager.getPairedVisible();
-                const lock = locks.get(msg.data.address);
-                if (lock) {
-                  WsApi.sendLockStatus(wss, lock);
-                }
+                api.sendError("Lock command failed; physical state was not changed", msg);
               }
               await manager.disconnectLock(msg.data.address);
             }
@@ -99,11 +95,7 @@ module.exports = async (server) => {
             if (msg.data && msg.data.address) {
               const result = await manager.unlockLock(msg.data.address);
               if (!result) {
-                const locks = manager.getPairedVisible();
-                const lock = locks.get(msg.data.address);
-                if (lock) {
-                  WsApi.sendLockStatus(wss, lock);
-                }
+                api.sendError("Unlock command failed; physical state was not changed", msg);
               }
               await manager.disconnectLock(msg.data.address);
             }

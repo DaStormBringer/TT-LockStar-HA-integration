@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
+  patchLockStateAdvertisement,
   patchNobleDevice,
   patchNobleScanner,
 } = require('../scripts/patch-ttlock-sdk');
@@ -30,4 +31,21 @@ test('patches the SDK to replace a stale Noble peripheral on rediscovery', () =>
 test('fails closed when the expected SDK code is not present', () => {
   assert.throws(() => patchNobleDevice('unexpected source'), /expected one match/);
   assert.throws(() => patchNobleScanner('unexpected source'), /expected one match/);
+});
+
+test('does not infer locked state from an idle unlock advertisement flag', () => {
+  const source = `        if (this.device.isUnlock) {
+            paramsChanged.lockedStatus = this.lockedStatus != LockedStatus_1.LockedStatus.UNLOCKED;
+            this.lockedStatus = LockedStatus_1.LockedStatus.UNLOCKED;
+        }
+        else {
+            paramsChanged.lockedStatus = this.lockedStatus != LockedStatus_1.LockedStatus.LOCKED;
+            this.lockedStatus = LockedStatus_1.LockedStatus.LOCKED;
+        }`;
+
+  const patched = patchLockStateAdvertisement(source);
+
+  assert.match(patched, /TT_LOCKSTAR_CONFIRMED_LOCK_STATE/);
+  assert.doesNotMatch(patched, /LockedStatus\.LOCKED/);
+  assert.equal(patchLockStateAdvertisement(patched), patched);
 });
