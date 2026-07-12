@@ -125,6 +125,9 @@ test('publishes magnetic contact discovery independently from lock state', () =>
   assert.match(haSource, /payload_on: "OPEN"/);
   assert.match(haSource, /payload_off: "CLOSED"/);
   assert.match(haSource, /state: "UNKNOWN"/);
+  assert.match(haSource, /availability_template: "\{\{ value_json\.availability \}\}"/);
+  assert.match(haSource, /availability: lockedStatus == LockedStatus\.UNKNOWN \? "offline" : "online"/);
+  assert.match(haSource, /rawName\.replace\(\/\\0\/g, ''\)\.trim\(\)/);
   assert.match(haSource, /async _onLockStateUnknown\(lock\) \{\s+await this\.configureLock\(lock\);/);
 });
 

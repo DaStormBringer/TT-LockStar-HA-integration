@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.0-alpha.12] - 2026-07-12
+
+- Mark the MQTT lock unavailable when deadbolt position is unknown so Home Assistant cannot retain a misleading prior state.
+- Sanitize null-padded advertised names and use a stable address-based fallback before full lock metadata is available.
+
 ## [0.1.0-alpha.11] - 2026-07-12
 
 - Publish migrated unknown deadbolt state and MQTT discovery as soon as a paired lock is seen, without waiting for a successful BLE connection.

@@ -59,6 +59,17 @@ class HomeAssistant {
     return address.split(":").join("").toLowerCase();
   }
 
+  getLockName(lock) {
+    const rawName = lock.getName();
+    if (typeof rawName === 'string') {
+      const cleanName = rawName.replace(/\0/g, '').trim();
+      if (cleanName) return cleanName;
+    }
+    const alias = store.getLockAlias(lock.getAddress(), false);
+    if (typeof alias === 'string' && alias.trim()) return alias.trim();
+    return "TTLock " + this.getLockId(lock).slice(-6).toUpperCase();
+  }
+
   /**
    * Configure a lock device in HA
    * @param {import('ttlock-sdk-js').TTLock} lock 
@@ -67,7 +78,7 @@ class HomeAssistant {
     if (this.connected && !this.configuredLocks.has(lock.getAddress())) {
       // setup lock entity
       const id = this.getLockId(lock);
-      const name = lock.getName();
+      const name = this.getLockName(lock);
       const device = {
         identifiers: [
           "ttlock_" + id
@@ -91,6 +102,10 @@ class HomeAssistant {
         state_locked: "LOCK",
         state_unlocked: "UNLOCK",
         value_template: "{{ value_json.state }}",
+        availability_topic: "ttlock/" + id,
+        availability_template: "{{ value_json.availability }}",
+        payload_available: "online",
+        payload_not_available: "offline",
         optimistic: false,
         retain: false
       }
@@ -200,6 +215,7 @@ class HomeAssistant {
         battery: lock.getBattery(),
         rssi: lock.getRssi(),
         state: "UNKNOWN",
+        availability: lockedStatus == LockedStatus.UNKNOWN ? "offline" : "online",
         door: store.getDoorState(lock.getAddress()) || "UNKNOWN",
       }
       if (this.lockTimes.has(id)) {
