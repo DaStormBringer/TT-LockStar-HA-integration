@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   OperationState,
   inferLatestOperationState,
@@ -47,5 +49,32 @@ test('ignores unrelated operations and preserves unknown when no state evidence 
       null,
     ], LOCK_TYPES, UNLOCK_TYPES),
     undefined,
+  );
+});
+
+test('manual operation-log refresh routes raw records through state reconciliation', () => {
+  const managerSource = fs.readFileSync(path.join(__dirname, '../src/manager.js'), 'utf8');
+
+  assert.match(
+    managerSource,
+    /const rawOperations = await lock\.getOperationLog\(true, reload\);\s+await this\._applyOperationState\(lock, rawOperations\);/,
+  );
+});
+
+test('repeated log confirmation does not emit a duplicate state event', () => {
+  const managerSource = fs.readFileSync(path.join(__dirname, '../src/manager.js'), 'utf8');
+
+  assert.match(
+    managerSource,
+    /if \(previousStatus === confirmedStatus\) \{[\s\S]*?return confirmedStatus;\s+\}/,
+  );
+});
+
+test('initial discovery honors the proactive log-fetch setting', () => {
+  const managerSource = fs.readFileSync(path.join(__dirname, '../src/manager.js'), 'utf8');
+
+  assert.match(
+    managerSource,
+    /Successful connect attempt to paired lock[\s\S]*?hasProactiveLogFetching\(\)[\s\S]*?if \(proactiveLogsEnabled\) \{\s+await this\._processOperationLog\(lock\);/,
   );
 });

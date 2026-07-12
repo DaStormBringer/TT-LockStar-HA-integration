@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.1.0-alpha.8] - 2026-07-12
+## [0.1.0-alpha.9] - 2026-07-11
+
+- Reconcile confirmed lock state during a forced/manual operation-log refresh as well as proactive event handling.
+- Avoid publishing duplicate lock/unlock events when a refreshed log confirms the state already reported to Home Assistant.
+- Honor the proactive log-fetch setting during initial discovery instead of always reading the log at startup.
+
+## [0.1.0-alpha.8] - 2026-07-11
 
 - Treat the newest explicit lock/unlock operation-log record as confirmed state evidence.
 - Persist manual lock/unlock state and publish a single Home Assistant update.

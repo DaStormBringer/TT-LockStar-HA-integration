@@ -723,7 +723,9 @@ class Manager extends EventEmitter {
         return false;
       }
       try {
-        let operations = JSON.parse(JSON.stringify(await lock.getOperationLog(true, reload)));
+        const rawOperations = await lock.getOperationLog(true, reload);
+        await this._applyOperationState(lock, rawOperations);
+        let operations = JSON.parse(JSON.stringify(rawOperations));
         let validOperations = [];
         // console.log(operations);
         for (let operation of operations) {
@@ -910,7 +912,11 @@ class Manager extends EventEmitter {
           const result = await this._connectLock(lock, true);
           if (result == true) {
             console.log("Successful connect attempt to paired lock", lock.getAddress());
-            await this._processOperationLog(lock);
+            const proactiveLogsEnabled = typeof lock.hasProactiveLogFetching !== "function"
+              || lock.hasProactiveLogFetching();
+            if (proactiveLogsEnabled) {
+              await this._processOperationLog(lock);
+            }
             try {
               const time = await lock.getLockTime();
               this.emit("lockTimeUpdated", lock, time);
@@ -1054,6 +1060,10 @@ class Manager extends EventEmitter {
 
   async _processOperationLog(lock) {
     const operations = await lock.getOperationLog();
+    return this._applyOperationState(lock, operations);
+  }
+
+  async _applyOperationState(lock, operations) {
     const operationState = inferLatestOperationState(
       operations,
       LogOperateCategory.LOCK,
@@ -1068,12 +1078,18 @@ class Manager extends EventEmitter {
     const confirmedStatus = operationState === OperationState.LOCKED
       ? LockedStatus.LOCKED
       : LockedStatus.UNLOCKED;
+    const previousStatus = lock.lockedStatus;
 
     // TypeScript marks this field protected, but the compiled SDK stores it as
     // a normal JavaScript property. Operation-log records are explicit evidence,
     // unlike the lock's ambiguous idle isUnlock=false advertisement.
     lock.lockedStatus = confirmedStatus;
     store.setLockData(this.client.getLockData());
+
+    if (previousStatus === confirmedStatus) {
+      console.log('[Manager] Operation log confirmed the already-published lock state');
+      return confirmedStatus;
+    }
 
     if (confirmedStatus === LockedStatus.LOCKED) {
       console.log('>>>>>> Confirmed locked from operation log <<<<<<');
