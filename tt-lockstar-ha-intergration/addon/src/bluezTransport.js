@@ -274,6 +274,7 @@ class BluezScanner extends EventEmitter {
   async removeDevice(device) {
     await this._initPromise;
     const current = this.objects.get(device.path)?.[DEVICE_IFACE] || {};
+    if (Object.keys(current).length === 0) return false;
     if (current.Paired) throw new Error(`refusing to remove paired BlueZ device ${device.address}`);
     await this.adapter.RemoveDevice(device.path);
     return true;
@@ -427,6 +428,7 @@ class BluezDevice extends EventEmitter {
 
   async disconnect() {
     const wasActive = this.connected || this.connecting;
+    const refreshUnpairedCache = this.properties.Paired !== true;
     try {
       const proxy = await this._ensureProxy();
       await proxy.getInterface(DEVICE_IFACE).Disconnect();
@@ -441,6 +443,14 @@ class BluezDevice extends EventEmitter {
       for (const characteristic of this.notificationCharacteristics) characteristic.cleanup();
       this.notificationCharacteristics.clear();
       if (shouldEmit) this.emit('disconnected');
+    }
+    if (refreshUnpairedCache) {
+      try {
+        const removed = await this.scanner.removeDevice(this);
+        if (removed) console.log(`[Bluetooth][BlueZ] Removed disconnected unpaired cache for ${this.address}`);
+      } catch (error) {
+        console.warn(`[Bluetooth][BlueZ] Could not refresh disconnected cache for ${this.address}: ${error.message}`);
+      }
     }
     return true;
   }
@@ -460,8 +470,16 @@ class BluezDevice extends EventEmitter {
   }
 
   handleRemoved() {
+    const wasActive = this.connected || this.connecting;
     this.proxy = null;
-    this._emitDisconnected();
+    if (wasActive) {
+      this._emitDisconnected();
+    } else {
+      this.state = 'disconnected';
+      this.services = new Map();
+      for (const characteristic of this.notificationCharacteristics) characteristic.cleanup();
+      this.notificationCharacteristics.clear();
+    }
   }
 
   async refreshDevice() {

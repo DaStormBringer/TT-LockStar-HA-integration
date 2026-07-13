@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.28] - 2026-07-12
+
+- Record that alpha.27 performed a real second native BlueZ connection attempt, but both attempts returned `le-connection-abort-by-local` before GATT setup or any unlock write.
+- Correlate the failures with reuse of a cached BlueZ `Device1` object after the successful alpha.26 metadata session; the successful session used a newly rediscovered object.
+- Remove only the target's host-unpaired BlueZ cache after native disconnect so the next wake produces a fresh `InterfacesAdded` device object.
+- Preserve host-paired device objects and keep TTLock protocol credentials untouched.
+- Add regression coverage for unpaired removal and paired-device preservation after disconnect.
+
 ## [0.1.0-alpha.27] - 2026-07-12
 
 - Record that alpha.26 native BlueZ connected in about 10.3 seconds, completed multiple authenticated metadata reads and responses, and disconnected cleanly without loading Noble.
