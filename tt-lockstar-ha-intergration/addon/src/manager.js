@@ -46,6 +46,7 @@ const DEADBOLT_UNLOCK_RECORD_TYPES = LogOperateCategory.UNLOCK.filter(
 const FIRMWARE_READ_WAKE_WAIT_MS = 60000;
 const DEFAULT_PRECONNECT_HOLD_SECONDS = 15;
 const PRECONNECT_WAKE_WAIT_MS = 60000;
+const PRECONNECT_KEEPALIVE_INTERVAL_MS = 2000;
 
 function usesBluezDbus() {
   return ['dbus', 'bluez'].includes(process.env.TTLOCK_BLUETOOTH_TRANSPORT);
@@ -169,6 +170,7 @@ class Manager extends EventEmitter {
     this.interacting = false;
     this.lockMutexes = new Map();
     this.preparedConnections = new PreparedConnectionRegistry();
+    this.preparedConnectionKeepalives = new Map();
     /** @type {NodeJS.Timeout} */
     this.scanTimer = undefined;
     this.scanCounter = 0;
@@ -329,6 +331,7 @@ class Manager extends EventEmitter {
   }
 
   async disconnectLock(address) {
+    await this._stopPreparedConnectionKeepalive(address);
     this.preparedConnections.clear(address);
     const lock = this.pairedLocks.get(address);
     this.interacting = false;
@@ -363,18 +366,25 @@ class Manager extends EventEmitter {
     if (existing && !lock.isConnected()) {
       await this.disconnectLock(address);
     }
+    await this._stopPreparedConnectionKeepalive(address);
     if (!lock.isConnected() && !(await this._waitForPreparedAdvertisement(lock))) {
       return false;
     }
     if (!lock.isConnected() && !(await this._connectLock(lock, false))) {
       return false;
     }
+    if (!(await this._verifyPreparedConnection(lock))) {
+      await this.disconnectLock(address);
+      return false;
+    }
 
     const holdMs = holdSeconds * 1000;
     const { expiresAt } = this.preparedConnections.schedule(address, holdMs, async () => {
       console.log(`[Manager] Prepared connection for ${address} expired after ${holdSeconds}s`);
+      await this._stopPreparedConnectionKeepalive(address);
       await this.disconnectLock(address);
     });
+    this._startPreparedConnectionKeepalive(lock);
     console.log(`[Manager] Prepared command-ready connection for ${address}; holding up to ${holdSeconds}s`);
     return {
       address,
@@ -383,6 +393,85 @@ class Manager extends EventEmitter {
       expiresAt: new Date(expiresAt).toISOString(),
       readOnly: true,
     };
+  }
+
+  async _verifyPreparedConnection(lock) {
+    const address = lock.getAddress();
+    const startedAt = Date.now();
+    try {
+      await lock.getLockTime();
+      console.log(
+        `[Timing] ${address} prepared command channel verification completed after ${Date.now() - startedAt}ms`,
+      );
+      return lock.isConnected();
+    } catch (error) {
+      console.warn(
+        `[Manager] Prepared command channel verification failed for ${address}: ${error.message || error}`,
+      );
+      return false;
+    }
+  }
+
+  _startPreparedConnectionKeepalive(lock, intervalMs = PRECONNECT_KEEPALIVE_INTERVAL_MS) {
+    const address = lock.getAddress();
+    if (this.preparedConnectionKeepalives.has(address)) {
+      throw new Error(`Prepared connection keepalive already exists for ${address}`);
+    }
+
+    const state = {
+      healthy: true,
+      pending: Promise.resolve(true),
+      stopped: false,
+      timer: undefined,
+    };
+    const scheduleNext = () => {
+      if (state.stopped) return;
+      state.timer = setTimeout(() => {
+        state.timer = undefined;
+        if (state.stopped) return;
+        state.pending = (async () => {
+          const startedAt = Date.now();
+          try {
+            await lock.getLockTime();
+            if (!lock.isConnected()) {
+              throw new Error('lock disconnected during keepalive');
+            }
+            console.log(
+              `[Timing] ${address} prepared connection keepalive completed after ${Date.now() - startedAt}ms`,
+            );
+            return true;
+          } catch (error) {
+            state.healthy = false;
+            console.warn(
+              `[Manager] Prepared connection keepalive failed for ${address}: ${error.message || error}`,
+            );
+            if (!state.stopped) {
+              state.stopped = true;
+              this.preparedConnectionKeepalives.delete(address);
+              this.preparedConnections.clear(address);
+              await this.disconnectLock(address);
+            }
+            return false;
+          } finally {
+            if (!state.stopped && state.healthy) scheduleNext();
+          }
+        })();
+      }, intervalMs);
+      if (typeof state.timer?.unref === 'function') state.timer.unref();
+    };
+
+    this.preparedConnectionKeepalives.set(address, state);
+    scheduleNext();
+  }
+
+  async _stopPreparedConnectionKeepalive(address) {
+    const state = this.preparedConnectionKeepalives.get(address);
+    if (!state) return true;
+    state.stopped = true;
+    if (state.timer) clearTimeout(state.timer);
+    this.preparedConnectionKeepalives.delete(address);
+    const completed = await state.pending;
+    return completed !== false && state.healthy;
   }
 
   async _waitForPreparedAdvertisement(lock, { timeoutMs = PRECONNECT_WAKE_WAIT_MS } = {}) {
@@ -404,9 +493,16 @@ class Manager extends EventEmitter {
     return true;
   }
 
-  _claimPreparedConnection(lock) {
+  async _claimPreparedConnection(lock) {
     const address = lock.getAddress();
-    if (!lock.isConnected() || !this.preparedConnections.get(address)) return false;
+    if (!this.preparedConnections.get(address)) return false;
+    const healthy = await this._stopPreparedConnectionKeepalive(address);
+    if (!healthy || !lock.isConnected()) {
+      console.warn(`[Manager] Prepared connection for ${address} was no longer command-ready; reconnecting`);
+      this.preparedConnections.clear(address);
+      await this.disconnectLock(address);
+      return false;
+    }
     this.preparedConnections.claim(address);
     console.log(`[Manager] Reusing prepared command-ready connection for ${address}`);
     return true;
@@ -1313,7 +1409,7 @@ class Manager extends EventEmitter {
   async _connectLock(lock, readData = true) {
     if (this.scanning) return false;
     const address = lock.getAddress();
-    if (this._claimPreparedConnection(lock)) return true;
+    if (await this._claimPreparedConnection(lock)) return true;
     const mutexWaitStartedAt = Date.now();
     let waitedForMutex = false;
     while (this.lockMutexes.has(address)) {
@@ -1628,6 +1724,7 @@ class Manager extends EventEmitter {
   async _onLockDisconnected(lock) {
     const address = lock.getAddress();
     console.log("Disconnected from lock " + address);
+    await this._stopPreparedConnectionKeepalive(address);
     const prepared = this.preparedConnections.clear(address);
     if (prepared) {
       console.log(`[Manager] Prepared connection for ${address} ended before its deadline`);
@@ -1793,4 +1890,5 @@ const manager = new Manager();
 module.exports = manager;
 module.exports.Manager = Manager;
 module.exports.DEFAULT_PRECONNECT_HOLD_SECONDS = DEFAULT_PRECONNECT_HOLD_SECONDS;
+module.exports.PRECONNECT_KEEPALIVE_INTERVAL_MS = PRECONNECT_KEEPALIVE_INTERVAL_MS;
 module.exports.PRECONNECT_WAKE_WAIT_MS = PRECONNECT_WAKE_WAIT_MS;
