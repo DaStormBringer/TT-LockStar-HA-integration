@@ -7,6 +7,8 @@ This file contains the detailed release narrative and supervised hardware-test h
 
 ## Supervised validation history
 
+Alpha.44 exposes a bounded read-only firmware query over the add-on WebSocket API. A request shaped as `{"type":"firmware","data":{"address":"DC:47:11:85:94:2F"}}` opens a command-only BLE session, sends TTLock `COMM_READ_DEVICE_INFO` for `FIRMWARE_REVISION`, returns a `firmware` response, and disconnects. It does not send lock, unlock, settings, time-sync, or firmware-update commands. The implementation is unit tested but remains pending a live response from the tested M302.
+
 Alpha.43 changes only the advertisement ownership path. Home Assistant remains the ESPHome advertisement subscriber and publishes the supported `bluetooth/subscribe_advertisements` WebSocket stream to TT LockStar through the Supervisor-authenticated Core proxy. Separate ESPHome native API clients retain active scan mode and GATT operations. Home Assistant scanner source addresses are mapped back to configured proxies before the lock advertisement reaches the freshness gate, preserving strongest-recent-proxy selection. The legacy direct subscription remains an explicit diagnostic option and is never selected automatically. This change is awaiting a deployed read-only firmware/version request and does not authorize a lock or unlock command.
 
 On 2026-07-12, `0.1.0-alpha.13` completed one supervised physical unlock and lock cycle on an M302 lock through a direct `hci0` adapter. Both commands returned success on their first command-only attempt, the deadbolt movement was confirmed at the door, and Home Assistant changed from `unlocked` to `locked` accordingly. Signal during the test was approximately -83 to -79 dB.

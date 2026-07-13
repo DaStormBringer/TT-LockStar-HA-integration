@@ -125,6 +125,13 @@ class WsApi {
     this.ws.send(message.toJSON());
   }
 
+  async sendFirmwareInfo(firmwareInfo) {
+    const message = new Message();
+    message.setType("firmware");
+    message.setData(firmwareInfo);
+    this.ws.send(message.toJSON());
+  }
+
   async sendError(error, originalMessage) {
     const message = new Message();
     message.setType("error");

@@ -2,7 +2,14 @@
 
 const EventEmitter = require('events');
 const store = require("./store");
-const { AudioManage, LockedStatus, LogOperate, LogOperateCategory, LogOperateNames } = require('ttlock-sdk-js/dist/constant');
+const {
+  AudioManage,
+  DeviceInfoEnum,
+  LockedStatus,
+  LogOperate,
+  LogOperateCategory,
+  LogOperateNames,
+} = require('ttlock-sdk-js/dist/constant');
 const { BluezTTLockClient } = require('./bluezTransport');
 const { EsphomeProxyTTLockClient } = require('./esphomeProxyTransport');
 const NATIVE_TRANSPORTS = ['bluez', 'esphome_proxy'];
@@ -393,6 +400,47 @@ class Manager extends EventEmitter {
       } catch (error) {
         console.error(error);
       }
+    }
+    return false;
+  }
+
+  /**
+   * Read only the lock firmware revision through TTLock's
+   * COMM_READ_DEVICE_INFO command. This intentionally uses a command-only
+   * connection and does not send an actuator or settings command.
+   */
+  async getFirmwareInfo(address) {
+    const lock = this.pairedLocks.get(address);
+    if (typeof lock == "undefined") {
+      return false;
+    }
+    if (!(await this._connectLock(lock, false))) {
+      return false;
+    }
+    try {
+      const rawRevision = await lock.readDeviceInfoCommand(DeviceInfoEnum.FIRMWARE_REVISION);
+      const firmwareRevision = Buffer.isBuffer(rawRevision)
+        ? rawRevision.toString('utf8').replace(/\0+$/g, '').trim()
+        : String(rawRevision ?? '').trim();
+      if (!firmwareRevision) {
+        throw new Error('Lock returned an empty firmware revision');
+      }
+      const gattFirmware = typeof lock.getFirmware === 'function'
+        ? String(lock.getFirmware() ?? '').trim()
+        : '';
+      const info = {
+        address,
+        command: 'COMM_READ_DEVICE_INFO',
+        infoType: 'FIRMWARE_REVISION',
+        firmwareRevision,
+        gattFirmware: gattFirmware || undefined,
+        readOnly: true,
+      };
+      console.log(`[Manager] Firmware revision for ${address}: ${firmwareRevision}`);
+      this.emit('firmwareInfoRead', lock, info);
+      return info;
+    } catch (error) {
+      console.error(`[Manager] Failed reading firmware revision for ${address}:`, error);
     }
     return false;
   }
