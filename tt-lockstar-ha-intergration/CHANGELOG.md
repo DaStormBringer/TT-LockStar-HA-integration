@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0-alpha.58] - 2026-07-13
+
+- Fail closed unless connection preparation completes a harmless lock-time read, proving that the subscribed TTLock command channel can receive a reply before a lease is advertised as ready.
+- Keep a prepared session awake with a bounded read-only lock-time request every two seconds for only the requested 5-to-30-second lease.
+- Stop the keepalive and await any in-flight read before handing the BLE session to a physical command, preventing overlapping SDK requests.
+- Disconnect and invalidate the prepared lease immediately if a verification or keepalive reply fails.
+- Preserve separate exact confirmation for every physical lock or unlock command; preparation remains read-only and does not authorize an actuator action.
+- Record the alpha.57 prepared-unlock failure: GATT accepted both command fragments, no notification reply arrived within five seconds, and the user physically confirmed the bolt remained locked. No retry was sent.
+- Pass 108 JavaScript tests and 8 ESPHome bridge tests in the built Linux/amd64 image; verify add-on 0.1.0-alpha.58, SDK 0.3.34, and 42 exposed commands.
+
 ## [0.1.0-alpha.57] - 2026-07-13
 
 - Save the authoritative current SDK lock snapshot after feature discovery instead of the ESPHome transport's possibly stale pre-connection cache entry.
