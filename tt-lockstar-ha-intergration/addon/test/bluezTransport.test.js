@@ -145,3 +145,53 @@ test('surfaces every duplicate native advertisement to the command freshness gat
   assert.equal(updates, 1);
   assert.equal(advertised, existing);
 });
+
+test('removes only an unpaired native BlueZ cache after disconnect', async () => {
+  let disconnectCalls = 0;
+  let removeCalls = 0;
+  const scanner = {
+    bus: {
+      getProxyObject: async () => ({
+        getInterface: () => ({
+          Disconnect: async () => { disconnectCalls += 1; },
+        }),
+      }),
+    },
+    removeDevice: async () => {
+      removeCalls += 1;
+      return true;
+    },
+  };
+  const device = new BluezDevice(scanner, '/device', {
+    Address: 'DC:47:11:85:94:2F',
+    Connected: true,
+    ServicesResolved: true,
+    Paired: false,
+  });
+
+  assert.equal(await device.disconnect(), true);
+  assert.equal(disconnectCalls, 1);
+  assert.equal(removeCalls, 1);
+  assert.equal(device.state, 'disconnected');
+});
+
+test('preserves host-paired BlueZ cache after disconnect', async () => {
+  let removeCalls = 0;
+  const scanner = {
+    bus: {
+      getProxyObject: async () => ({
+        getInterface: () => ({ Disconnect: async () => {} }),
+      }),
+    },
+    removeDevice: async () => { removeCalls += 1; },
+  };
+  const device = new BluezDevice(scanner, '/device', {
+    Address: 'DC:47:11:85:94:2F',
+    Connected: true,
+    ServicesResolved: true,
+    Paired: true,
+  });
+
+  await device.disconnect();
+  assert.equal(removeCalls, 0);
+});
