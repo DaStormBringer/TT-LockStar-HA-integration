@@ -58,6 +58,64 @@ class RawAdvertisementTests(unittest.TestCase):
         self.assertEqual([item[2] for item in client.writes], [bytes([1]) * 20, bytes([2]) * 7])
         self.assertTrue(all(item[3] is False for item in client.writes))
 
+    def test_clears_only_matching_notification_callbacks(self):
+        address = mac_to_int("DC:47:11:85:94:2F")
+        other_address = mac_to_int("11:22:33:44:55:66")
+        removed = []
+        bridge = Bridge([])
+        bridge.notification_stops[(address, 12)] = (None, lambda: removed.append(12))
+        bridge.notification_stops[(address, 15)] = (None, lambda: removed.append(15))
+        bridge.notification_stops[(other_address, 12)] = (None, lambda: removed.append(99))
+
+        count = bridge.clear_notification_subscriptions(address, "test disconnect")
+
+        self.assertEqual(count, 2)
+        self.assertEqual(removed, [12, 15])
+        self.assertNotIn((address, 12), bridge.notification_stops)
+        self.assertNotIn((address, 15), bridge.notification_stops)
+        self.assertIn((other_address, 12), bridge.notification_stops)
+
+    def test_reissues_start_notify_after_disconnect_cleanup(self):
+        class FakeClient:
+            def __init__(self):
+                self.starts = 0
+                self.callback_removals = 0
+
+            async def bluetooth_gatt_start_notify(self, address, handle, callback):
+                del address, handle, callback
+                self.starts += 1
+
+                async def stop_remote_notify():
+                    return None
+
+                def remove_local_callback():
+                    self.callback_removals += 1
+
+                return stop_remote_notify, remove_local_callback
+
+        async def run_test():
+            client = FakeClient()
+            proxy = Proxy("test:6053", "test", 6053, client=client, connected=True, name="test")
+            bridge = Bridge([])
+            address = mac_to_int("DC:47:11:85:94:2F")
+            bridge.active[address] = proxy
+            request = {
+                "action": "subscribe",
+                "address": "DC:47:11:85:94:2F",
+                "handle": 12,
+            }
+
+            await bridge.handle(request)
+            bridge.clear_notification_subscriptions(address, "test disconnect")
+            await bridge.handle(request)
+
+            return client, bridge, address
+
+        client, bridge, address = __import__("asyncio").run(run_test())
+        self.assertEqual(client.starts, 2)
+        self.assertEqual(client.callback_removals, 1)
+        self.assertIn((address, 12), bridge.notification_stops)
+
 
 if __name__ == "__main__":
     unittest.main()

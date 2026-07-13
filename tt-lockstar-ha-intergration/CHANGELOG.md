@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.41] - 2026-07-13
+
+- Clear ESPHome GATT notification callbacks whenever the BLE link disconnects and defensively before reconnecting, so every new lock session sends a fresh start-notify request instead of trusting a stale subscription marker.
+- Add regression coverage that scopes cleanup to the disconnected lock and proves a second session reissues notification registration.
+- Preserve administrator unlock authentication, user-time lock authentication, 100 ms multipart pacing, authenticated response validation, the two-attempt limit, and fail-closed behavior.
+- Record alpha.40's supervised unlock failure: both attempts connected and wrote the administrator-check fragments but disconnected waiting for the response; no actuator command was sent and the user confirmed that the bolt remained locked.
+
 ## [0.1.0-alpha.40] - 2026-07-13
 
 - Pace ESPHome multipart write-without-response fragments at 100 ms instead of 20 ms. The ESPHome API acknowledges only local queueing for this write type, so the added interval gives the proxy time to transmit one fragment before accepting the next.

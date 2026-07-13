@@ -13,7 +13,7 @@ Read [MERGE_NOTES.md](MERGE_NOTES.md) before building, installing, pairing, or o
 
 ## Current status
 
-- Add-on version: `0.1.0-alpha.38`
+- Add-on version: `0.1.0-alpha.41`
 - Home Assistant stage: `experimental`
 - Development branch: `main`
 - Target: Home Assistant on Linux
