@@ -141,6 +141,31 @@ class Bridge:
         self.ready_emitted = False
         self.shutting_down = False
 
+    def clear_notification_subscriptions(self, address: int, reason: str) -> int:
+        """Discard local notify callbacks that cannot survive a BLE disconnect."""
+        removed = 0
+        for key, stops in list(self.notification_stops.items()):
+            if key[0] != address:
+                continue
+            self.notification_stops.pop(key, None)
+            try:
+                # The remote GATT connection is already gone (or is about to be
+                # replaced), so remove only aioesphomeapi's local callback. A new
+                # connection must issue a fresh start-notify request to ESPHome.
+                stops[1]()
+            except Exception as error:  # pylint: disable=broad-except
+                log(
+                    f"remove notification callback for {int_to_mac(address)} "
+                    f"handle {key[1]} failed: {error}"
+                )
+            removed += 1
+        if removed:
+            log(
+                f"cleared {removed} notification subscription(s) for "
+                f"{int_to_mac(address)} ({reason})"
+            )
+        return removed
+
     async def emit(self, payload: dict[str, Any]) -> None:
         async with self.output_lock:
             print(json.dumps(payload, separators=(",", ":")), flush=True)
@@ -300,6 +325,7 @@ class Bridge:
                 for address, active_proxy in list(self.active.items()):
                     if active_proxy is proxy:
                         self.active.pop(address, None)
+                        self.clear_notification_subscriptions(address, "ESPHome proxy disconnected")
                         await self.emit({
                             "type": "connection",
                             "address": int_to_mac(address),
@@ -334,6 +360,9 @@ class Bridge:
 
     async def connect_device(self, request: dict[str, Any]) -> dict[str, Any]:
         address = mac_to_int(request["address"])
+        # A notification registration belongs to one BLE connection. Clear any
+        # marker left by a missed/late disconnect callback before reconnecting.
+        self.clear_notification_subscriptions(address, "starting a new BLE connection")
         timeout = float(request.get("timeout", 10))
         requested_type = request.get("address_type")
         errors: list[str] = []
@@ -359,6 +388,7 @@ class Bridge:
                 }))
                 if not connected:
                     self.active.pop(address, None)
+                    self.clear_notification_subscriptions(address, "BLE disconnected")
 
             try:
                 unsubscribe = await proxy.client.bluetooth_device_connect(
@@ -405,6 +435,7 @@ class Bridge:
         address, proxy, client = self.session(request)
         if action == "disconnect":
             await client.bluetooth_device_disconnect(address, timeout=float(request.get("timeout", 5)))
+            self.clear_notification_subscriptions(address, "BLE disconnect completed")
             unsubscribe = self.connection_unsubscribers.pop(address, None)
             if unsubscribe:
                 unsubscribe()
