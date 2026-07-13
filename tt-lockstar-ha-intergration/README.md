@@ -9,7 +9,7 @@ Home Assistant slug: `tt-lockstar-ha-intergration`. This is a new add-on identit
 
 Read the repository [merge and validation notes](../MERGE_NOTES.md) before installation.
 
-Current version: `0.1.0-alpha.43`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
+Current version: `0.1.0-alpha.44`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
 
 ## Critical limitations
 
@@ -39,12 +39,13 @@ The merged `amd64` Alpine image builds successfully. The declared `aarch64` targ
 
 ### Tested compatibility scope
 
-Hardware compatibility is claimed only for the user's **M302** lock and the firmware currently installed on that device. The current SDK metadata reports that firmware value as `unknown`, so this README does not claim compatibility with any other M302 firmware or any other lock model. Replace `unknown` with the exact reported value after a successful full-metadata read; do not broaden this statement from a protocol-only or simulated test.
+Hardware compatibility is claimed only for the user's **M302** lock and the firmware currently installed on that device. The current SDK metadata reports that firmware value as `unknown`, so this README does not claim compatibility with any other M302 firmware or any other lock model. Replace `unknown` only after alpha.44's dedicated read-only firmware request returns the exact value from this physical lock; do not broaden this statement from a protocol-only or simulated test.
 
 Detailed per-release changes and supervised hardware-test results are maintained in [UPDATE_NOTES.md](UPDATE_NOTES.md). The shorter [CHANGELOG.md](CHANGELOG.md) remains the release-oriented summary.
 
 ## Features
 
+- Dedicated read-only firmware-revision request using `COMM_READ_DEVICE_INFO` / `FIRMWARE_REVISION`
 - Ingress interface for discovery and management
 - Multiple-lock support
 - Lock and unlock
@@ -65,9 +66,14 @@ Detailed per-release changes and supervised hardware-test results are maintained
 3. Confirm the direct Bluetooth adapter is visible to Home Assistant.
 4. Import known-good existing lock data if a safe source is available.
 5. Disable automatic operation-log fetching initially.
-6. Test status, lock, and unlock while physically at the open door.
-7. Confirm the keypad, mechanical entry, TTLock app, and G2 still function.
-8. Observe reliability before enabling any automation.
+6. Run the read-only firmware request and confirm that a `firmware` response is received before testing an actuator command.
+7. Test status, lock, and unlock while physically at the open door.
+8. Confirm the keypad, mechanical entry, TTLock app, and G2 still function.
+9. Observe reliability before enabling any automation.
+
+### Read-only firmware request
+
+Send `{"type":"firmware","data":{"address":"DC:47:11:85:94:2F"}}` to the add-on's `/api` WebSocket. A successful response uses type `firmware` and includes `command: "COMM_READ_DEVICE_INFO"`, `infoType: "FIRMWARE_REVISION"`, the returned `firmwareRevision`, and `readOnly: true`. The add-on disconnects after the response. This route does not lock, unlock, change settings, synchronize time, or perform a firmware update.
 
 ## Security and dependency notice
 

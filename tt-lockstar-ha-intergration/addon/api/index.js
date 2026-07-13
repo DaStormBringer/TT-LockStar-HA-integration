@@ -123,6 +123,18 @@ module.exports = async (server) => {
             }
             break;
 
+          case "firmware": // read only the firmware revision from a paired lock
+            if (msg.data && msg.data.address) {
+              const firmwareInfo = await manager.getFirmwareInfo(msg.data.address);
+              if (firmwareInfo === false) {
+                api.sendError("Failed reading firmware revision", msg);
+              } else {
+                api.sendFirmwareInfo(firmwareInfo);
+              }
+              await manager.disconnectLock(msg.data.address);
+            }
+            break;
+
           case "passcode":
             if (msg.data && msg.data.address && msg.data.passcode) {
               if (process.env.DEV_MODE) {

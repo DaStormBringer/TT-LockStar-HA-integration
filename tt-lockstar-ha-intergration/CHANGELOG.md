@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.44] - 2026-07-13
+
+- Add a dedicated read-only `firmware` WebSocket request for paired locks.
+- Use a command-only BLE connection and TTLock `COMM_READ_DEVICE_INFO` with `FIRMWARE_REVISION`; do not send an actuator, settings, time-sync, or firmware-update command.
+- Return the requested revision, the generic GATT firmware value when available, the exact command and info type, and an explicit `readOnly` marker before disconnecting.
+- Add regression coverage for command selection, command-only connection policy, response framing, and post-request disconnect routing.
+
 ## [0.1.0-alpha.43] - 2026-07-13
 
 - Consume Home Assistant's authenticated `bluetooth/subscribe_advertisements` WebSocket feed by default so Home Assistant retains ownership of each ESPHome proxy's single advertisement subscription.
