@@ -9,7 +9,7 @@ Home Assistant slug: `tt-lockstar-ha-intergration`. This is a new add-on identit
 
 Read the repository [merge and validation notes](../MERGE_NOTES.md) before installation.
 
-Current version: `0.1.0-alpha.59`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
+Current version: `0.1.0-alpha.60`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
 
 Current development prioritizes discovery, evidence-backed state, reliable lock/unlock, settings, PINs, and cards. Biometric fingerprint enrollment and management are unvalidated and intentionally last in the implementation and hardware-test order.
 
@@ -55,6 +55,7 @@ Detailed per-release changes and supervised hardware-test results are maintained
 - Multiple-lock support
 - Lock and unlock
 - Bounded read-only prepared connections that wait up to 60 seconds for a sleeping lock, then automatically expire after 5 through 30 seconds
+- Home Assistant MQTT discovery for a `Prepare M302 Connection` button that starts one 15-second read-only lease; it never locks, unlocks, or authorizes a later actuator command
 - Auto-lock settings up to 300 seconds
 - Lock sound management
 - PIN, IC card, and fingerprint management
@@ -67,6 +68,8 @@ Detailed per-release changes and supervised hardware-test results are maintained
 - MQTT discovery for lock state, battery, signal strength, and lock time
 - BLE connection serialization and bounded connection recovery; physical lock and unlock payloads are executed exactly once per confirmed request and are never automatically retried
 - Process-local ESPHome GATT service/MTU caching with automatic uncached recovery; the alpha.48 cached path completed a physically confirmed unlock, although its single timing sample did not improve on alpha.47
+
+The preparation button is safe to call from an approach or presence automation because it only establishes and verifies a temporary BLE command channel. Keep every lock or unlock action in a separate automation or manual flow with its own authorization and safety checks. Repeated preparation can increase lock battery use and can contend with the TTLock app or G2 gateway, so trigger it only on a meaningful approach transition and allow the 15-second lease to expire.
 
 ## Recommended first test
 

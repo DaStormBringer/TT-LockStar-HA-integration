@@ -8,6 +8,8 @@
 4. **Wake up the lock**: Press any key on your lock's keypad so it lights up and starts broadcasting BLE signals.
 5. **Open Web UI & Pair**: Open the Ingress Web UI from the sidebar or the add-on page, and click the bold **Scan for Locks** button in the setup assistant to find and pair your lock.
 
+After MQTT discovery completes, Home Assistant also exposes a **Prepare M302 Connection** button. It opens and verifies a read-only BLE connection for at most 15 seconds so an approach automation can absorb lock wake-up latency. The button does not move the bolt or authorize a later lock/unlock request. Trigger it only on a meaningful approach transition to limit battery use and contention with the TTLock app or G2 gateway.
+
 ---
 
 ## Configuration Settings
