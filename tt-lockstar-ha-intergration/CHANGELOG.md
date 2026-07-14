@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.0-alpha.60] - 2026-07-13
+
+- Add Home Assistant MQTT discovery for a `Prepare M302 Connection` button backed by the existing bounded 15-second read-only connection lease.
+- Subscribe to the dedicated `ttlock/<id>/prepare/set` topic and accept only the exact `PRESS` payload; preparation never calls lock, unlock, or early disconnect.
+- Keep physical lock/unlock authorization separate: pressing or automating the preparation button cannot authorize a later actuator command.
+- Make the MQTT bridge's manager and connection factory injectable for direct safety tests without changing production defaults.
+- Add four focused tests for subscription, discovery payload, bounded routing, and invalid-payload rejection.
+- Pass 114 JavaScript tests and 8 ESPHome bridge tests in the built Linux/amd64 image; verify add-on 0.1.0-alpha.60, SDK 0.3.34, and 42 exposed commands.
+
 ## [0.1.0-alpha.59] - 2026-07-13
 
 - Execute each explicitly confirmed physical lock or unlock request exactly once, eliminating the former second actuator attempt after an ambiguous timeout, disconnect, or false result.

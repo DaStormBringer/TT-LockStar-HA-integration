@@ -1,45 +1,49 @@
 'use stricet';
 
 const mqtt = require('async-mqtt');
-const manager = require('./manager');
 const store = require('./store');
 const { LockedStatus } = require('ttlock-sdk-js/dist/constant/LockedStatus');
 const { getAdvertisementState } = require('./advertisementState');
 
+const MQTT_PREWARM_HOLD_SECONDS = 15;
+
 class HomeAssistant {
   /**
    * 
-   * @param {import('./manager')} manager 
    * @param {Object} options
    * @param {string} options.mqttUrl 
    * @param {string} options.mqttUser 
    * @param {string} options.mqttPass 
    * @param {string} options.discovery_prefix 
+   * @param {import('./manager')} [options.manager]
+   * @param {Function} [options.mqttConnectAsync]
    */
   constructor(options) {
     this.mqttUrl = options.mqttUrl;
     this.mqttUser = options.mqttUser;
     this.mqttPass = options.mqttPass;
     this.discovery_prefix = options.discovery_prefix || "homeassistant";
+    this.manager = options.manager || require('./manager');
+    this.mqttConnectAsync = options.mqttConnectAsync || ((...args) => mqtt.connectAsync(...args));
     this.configuredLocks = new Set();
     this.lockTimes = new Map();
 
     this.connected = false;
 
-    manager.on("lockPaired", this._onLockPaired.bind(this));
-    manager.on("lockConnected", this._onLockConnected.bind(this));
-    manager.on("lockUnlock", this._onLockUnlock.bind(this));
-    manager.on("lockLock", this._onLockLock.bind(this));
-    manager.on("lockStateUnknown", this._onLockStateUnknown.bind(this));
-    manager.on("doorStateUpdated", this._onDoorStateUpdated.bind(this));
-    manager.on("lockBatteryUpdated", this._onLockBatteryUpdated.bind(this));
-    manager.on("lockTimeUpdated", this._onLockTimeUpdated.bind(this));
-    manager.on("lockAdvertisementStateUpdated", this._onLockAdvertisementStateUpdated.bind(this));
+    this.manager.on("lockPaired", this._onLockPaired.bind(this));
+    this.manager.on("lockConnected", this._onLockConnected.bind(this));
+    this.manager.on("lockUnlock", this._onLockUnlock.bind(this));
+    this.manager.on("lockLock", this._onLockLock.bind(this));
+    this.manager.on("lockStateUnknown", this._onLockStateUnknown.bind(this));
+    this.manager.on("doorStateUpdated", this._onDoorStateUpdated.bind(this));
+    this.manager.on("lockBatteryUpdated", this._onLockBatteryUpdated.bind(this));
+    this.manager.on("lockTimeUpdated", this._onLockTimeUpdated.bind(this));
+    this.manager.on("lockAdvertisementStateUpdated", this._onLockAdvertisementStateUpdated.bind(this));
   }
 
   async connect() {
     if (!this.connected) {
-      this.client = await mqtt.connectAsync(this.mqttUrl, {
+      this.client = await this.mqttConnectAsync(this.mqttUrl, {
         username: this.mqttUser,
         password: this.mqttPass
       });
@@ -47,6 +51,7 @@ class HomeAssistant {
       await this.client.subscribe("ttlock/+/set");
       await this.client.subscribe("ttlock/+/get_time/set");
       await this.client.subscribe("ttlock/+/sync_time/set");
+      await this.client.subscribe("ttlock/+/prepare/set");
       this.connected = true;
       console.log("MQTT connected");
     }
@@ -220,6 +225,18 @@ class HomeAssistant {
       }
       res = await this.client.publish(configSyncTimeTopic, JSON.stringify(syncTimePayload), { retain: true });
 
+      // setup a read-only, bounded connection pre-warm button
+      const configPrepareTopic = this.discovery_prefix + "/button/" + id + "/prepare/config";
+      const preparePayload = {
+        unique_id: "ttlock_" + id + "_prepare",
+        name: "Prepare " + name + " Connection",
+        device: device,
+        command_topic: "ttlock/" + id + "/prepare/set",
+        payload_press: "PRESS",
+        icon: "mdi:bluetooth-connect"
+      }
+      res = await this.client.publish(configPrepareTopic, JSON.stringify(preparePayload), { retain: true });
+
       this.configuredLocks.add(lock.getAddress());
 
     }
@@ -360,32 +377,35 @@ class HomeAssistant {
           case "LOCK":
             console.log(`[MQTT] Received LOCK command for ${address}`);
             try {
-              await manager.lockLock(address);
+              await this.manager.lockLock(address);
             } finally {
-              await manager.disconnectLock(address);
+              await this.manager.disconnectLock(address);
             }
             break;
           case "UNLOCK":
             console.log(`[MQTT] Received UNLOCK command for ${address}`);
             try {
-              await manager.unlockLock(address);
+              await this.manager.unlockLock(address);
             } finally {
-              await manager.disconnectLock(address);
+              await this.manager.disconnectLock(address);
             }
             break;
         }
       } else if (topicArr[2] == "get_time" && topicArr[3] == "set" && command === "PRESS") {
         try {
-          await manager.getLockTime(address);
+          await this.manager.getLockTime(address);
         } finally {
-          await manager.disconnectLock(address);
+          await this.manager.disconnectLock(address);
         }
       } else if (topicArr[2] == "sync_time" && topicArr[3] == "set" && command === "PRESS") {
         try {
-          await manager.syncLockTime(address);
+          await this.manager.syncLockTime(address);
         } finally {
-          await manager.disconnectLock(address);
+          await this.manager.disconnectLock(address);
         }
+      } else if (topicArr[2] == "prepare" && topicArr[3] == "set" && command === "PRESS") {
+        console.log(`[MQTT] Preparing a read-only ${MQTT_PREWARM_HOLD_SECONDS}s connection for ${address}`);
+        await this.manager.prepareLockConnection(address, MQTT_PREWARM_HOLD_SECONDS);
       }
     } else if (process.env.MQTT_DEBUG == "1") {
 
@@ -396,3 +416,4 @@ class HomeAssistant {
 }
 
 module.exports = HomeAssistant;
+module.exports.MQTT_PREWARM_HOLD_SECONDS = MQTT_PREWARM_HOLD_SECONDS;
