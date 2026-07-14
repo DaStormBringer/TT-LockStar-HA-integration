@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.62] - 2026-07-13
+
+- Add preferred read-only API command `lock.prewarm`; preserve `lock.connection.prepare` as an equivalent compatibility alias.
+- Rename the existing MQTT-discovered button to `Prewarm M302 Connection` while retaining its discovery topic and unique ID so Home Assistant keeps the same entity registry entry.
+- Route the button through `ttlock/<id>/prewarm/set`, retain the legacy `prepare/set` subscription, and keep the bounded 15-second lease and actuator authorization separation unchanged.
+- Pass 115 JavaScript tests and 8 ESPHome bridge tests in the built Linux/amd64 image; verify add-on 0.1.0-alpha.62, SDK 0.3.34, and 43 exposed commands. The inherited audit count remains 7 moderate, 7 high, and 2 critical in the legacy dependency chain.
+
 ## [0.1.0-alpha.61] - 2026-07-13
 
 - Stop inferring a missing BLE address type from the first MAC octet; public OUIs and static-random addresses can share the same high bits.

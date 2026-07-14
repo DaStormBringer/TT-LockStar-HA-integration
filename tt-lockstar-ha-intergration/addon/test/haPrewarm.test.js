@@ -50,6 +50,7 @@ test('subscribes to the read-only pre-warm command topic', async () => {
   await ha.connect();
 
   assert.equal(ha.connected, true);
+  assert.ok(subscriptions.includes('ttlock/+/prewarm/set'));
   assert.ok(subscriptions.includes('ttlock/+/prepare/set'));
 });
 
@@ -68,8 +69,8 @@ test('publishes Home Assistant discovery for the pre-warm button', async () => {
   const discovery = published.find(item => item.topic === `homeassistant/button/${LOCK_ID}/prepare/config`);
   assert.ok(discovery);
   assert.equal(discovery.payload.unique_id, `ttlock_${LOCK_ID}_prepare`);
-  assert.equal(discovery.payload.name, 'Prepare M302 Connection');
-  assert.equal(discovery.payload.command_topic, `ttlock/${LOCK_ID}/prepare/set`);
+  assert.equal(discovery.payload.name, 'Prewarm M302 Connection');
+  assert.equal(discovery.payload.command_topic, `ttlock/${LOCK_ID}/prewarm/set`);
   assert.equal(discovery.payload.payload_press, 'PRESS');
   assert.equal(discovery.payload.icon, 'mdi:bluetooth-connect');
   assert.deepEqual(discovery.options, { retain: true });
@@ -88,7 +89,7 @@ test('pre-warm command creates one bounded lease without an actuator or early di
   });
   const ha = new HomeAssistant({ manager });
 
-  await ha._onMQTTMessage(`ttlock/${LOCK_ID}/prepare/set`, Buffer.from('PRESS'));
+  await ha._onMQTTMessage(`ttlock/${LOCK_ID}/prewarm/set`, Buffer.from('PRESS'));
 
   assert.deepEqual(calls, [[
     'prepareLockConnection',
@@ -96,6 +97,19 @@ test('pre-warm command creates one bounded lease without an actuator or early di
     MQTT_PREWARM_HOLD_SECONDS,
   ]]);
   assert.equal(MQTT_PREWARM_HOLD_SECONDS, 15);
+});
+
+test('legacy prepare topic remains a pre-warm compatibility alias', async () => {
+  const calls = [];
+  const ha = new HomeAssistant({
+    manager: fakeManager({
+      prepareLockConnection: async (address, holdSeconds) => calls.push([address, holdSeconds]),
+    }),
+  });
+
+  await ha._onMQTTMessage(`ttlock/${LOCK_ID}/prepare/set`, Buffer.from('PRESS'));
+
+  assert.deepEqual(calls, [[ADDRESS, MQTT_PREWARM_HOLD_SECONDS]]);
 });
 
 test('pre-warm ignores any payload other than an exact button press', async () => {

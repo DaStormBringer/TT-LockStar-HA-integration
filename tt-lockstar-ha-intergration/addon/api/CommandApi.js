@@ -84,6 +84,13 @@ function command(name, description, options) {
   return Object.freeze({ name, description, ...options });
 }
 
+const PREWARM_COMMAND_OPTIONS = Object.freeze({
+  risk: 'read_only', readOnly: true,
+  args: { holdSeconds: 'optional integer 5..30; default 15' },
+  validate: args => ({ holdSeconds: optionalInteger(args, 'holdSeconds', 5, 30, 15) }),
+  run: (manager, address, args) => manager.prepareLockConnection(address, args.holdSeconds),
+});
+
 const COMMANDS = Object.freeze([
   command('system.scan.start', 'Start local BLE lock discovery.', {
     risk: 'local', readOnly: false, requiresAddress: false,
@@ -101,12 +108,8 @@ const COMMANDS = Object.freeze([
     risk: 'local', readOnly: false,
     run: (manager, address) => manager.disconnectLock(address),
   }),
-  command('lock.connection.prepare', 'Open a command-ready BLE session briefly so a following command can reuse it.', {
-    risk: 'read_only', readOnly: true,
-    args: { holdSeconds: 'optional integer 5..30; default 15' },
-    validate: args => ({ holdSeconds: optionalInteger(args, 'holdSeconds', 5, 30, 15) }),
-    run: (manager, address, args) => manager.prepareLockConnection(address, args.holdSeconds),
-  }),
+  command('lock.prewarm', 'Open and verify a short read-only BLE session so a following command can reuse it.', PREWARM_COMMAND_OPTIONS),
+  command('lock.connection.prepare', 'Compatibility alias for lock.prewarm.', PREWARM_COMMAND_OPTIONS),
   command('lock.lock', 'Physically engage the deadbolt.', {
     risk: 'actuator', readOnly: false, confirmationRequired: true, disconnect: true,
     run: (manager, address) => manager.lockLock(address),

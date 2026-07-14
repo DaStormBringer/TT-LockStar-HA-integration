@@ -86,7 +86,7 @@ Lock and unlock are executed exactly once per confirmed request. A connection fa
 System and lifecycle:
 
 - `system.scan.start`, `system.scan.stop`
-- `lock.pair`, `lock.connection.prepare`, `lock.disconnect`
+- `lock.pair`, `lock.prewarm`, `lock.connection.prepare` (compatibility alias), `lock.disconnect`
 - `lock.reset`
 
 Physical control and state:
@@ -121,7 +121,7 @@ Credentials:
 
 - Addresses use `AA:BB:CC:DD:EE:FF` format.
 - `forceRefresh` is an optional boolean for credential and operation-log reads.
-- `lock.connection.prepare` accepts optional `holdSeconds` from 5 through 30 and defaults to 15.
+- `lock.prewarm` accepts optional `holdSeconds` from 5 through 30 and defaults to 15. The older `lock.connection.prepare` name remains an equivalent compatibility alias.
 - Dates use `YYYYMMDDHHmm`.
 - Passcodes contain 4 through 9 digits; types are 1 through 4 as defined by the pinned SDK.
 - `lock.auto_lock.set` accepts `seconds` from 0 through 300; zero disables auto-lock.
@@ -142,14 +142,14 @@ The sleeping lock can take several seconds to emit its next connectable advertis
   "type": "command",
   "requestId": "prepare-1",
   "data": {
-    "name": "lock.connection.prepare",
+    "name": "lock.prewarm",
     "address": "AA:BB:CC:DD:EE:FF",
     "args": {"holdSeconds": 15}
   }
 }
 ```
 
-Preparation is read-only and does not require actuator confirmation. It can wait up to 60 seconds for a sleeping lock's next qualifying advertisement; the requested 5–30 second lease starts only after the BLE connection succeeds. Preparation sends no authentication, lock, or unlock payload. If no following command claims the session, the add-on disconnects automatically at the lease deadline. A claimed session is still subject to the authentication, validation, and exact-confirmation requirements of the following command. Keep the lease short: an active session consumes lock battery and may temporarily contend with the TTLock app or G2 gateway.
+Prewarming is read-only and does not require actuator confirmation. It can wait up to 60 seconds for a sleeping lock's next qualifying advertisement; the requested 5–30 second lease starts only after the BLE connection succeeds. Prewarming sends no lock or unlock payload and does not authorize one. If no following command claims the session, the add-on disconnects automatically at the lease deadline. A claimed session is still subject to the authentication, validation, and exact-confirmation requirements of the following command. Keep the lease short: an active session consumes lock battery and may temporarily contend with the TTLock app or G2 gateway.
 
 ## Safety and scope boundaries
 

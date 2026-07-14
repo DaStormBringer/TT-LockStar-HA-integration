@@ -9,7 +9,7 @@ Home Assistant slug: `tt-lockstar-ha-intergration`. This is a new add-on identit
 
 Read the repository [merge and validation notes](../MERGE_NOTES.md) before installation.
 
-Current version: `0.1.0-alpha.61`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
+Current version: `0.1.0-alpha.62`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
 
 Current development prioritizes discovery, evidence-backed state, reliable lock/unlock, settings, PINs, and cards. Biometric fingerprint enrollment and management are unvalidated and intentionally last in the implementation and hardware-test order.
 
@@ -56,7 +56,7 @@ Detailed per-release changes and supervised hardware-test results are maintained
 - Multiple-lock support
 - Lock and unlock
 - Bounded read-only prepared connections that wait up to 60 seconds for a sleeping lock, then automatically expire after 5 through 30 seconds
-- Home Assistant MQTT discovery for a `Prepare M302 Connection` button that starts one 15-second read-only lease; it never locks, unlocks, or authorizes a later actuator command
+- Home Assistant MQTT discovery for a `Prewarm M302 Connection` button that starts one 15-second read-only lease; HA can press it from a local identity/dwell automation, and it never locks, unlocks, or authorizes a later actuator command
 - Auto-lock settings up to 300 seconds
 - Lock sound management
 - PIN, IC card, and fingerprint management

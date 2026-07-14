@@ -51,6 +51,7 @@ class HomeAssistant {
       await this.client.subscribe("ttlock/+/set");
       await this.client.subscribe("ttlock/+/get_time/set");
       await this.client.subscribe("ttlock/+/sync_time/set");
+      await this.client.subscribe("ttlock/+/prewarm/set");
       await this.client.subscribe("ttlock/+/prepare/set");
       this.connected = true;
       console.log("MQTT connected");
@@ -229,9 +230,9 @@ class HomeAssistant {
       const configPrepareTopic = this.discovery_prefix + "/button/" + id + "/prepare/config";
       const preparePayload = {
         unique_id: "ttlock_" + id + "_prepare",
-        name: "Prepare " + name + " Connection",
+        name: "Prewarm " + name + " Connection",
         device: device,
-        command_topic: "ttlock/" + id + "/prepare/set",
+        command_topic: "ttlock/" + id + "/prewarm/set",
         payload_press: "PRESS",
         icon: "mdi:bluetooth-connect"
       }
@@ -403,8 +404,8 @@ class HomeAssistant {
         } finally {
           await this.manager.disconnectLock(address);
         }
-      } else if (topicArr[2] == "prepare" && topicArr[3] == "set" && command === "PRESS") {
-        console.log(`[MQTT] Preparing a read-only ${MQTT_PREWARM_HOLD_SECONDS}s connection for ${address}`);
+      } else if (["prewarm", "prepare"].includes(topicArr[2]) && topicArr[3] == "set" && command === "PRESS") {
+        console.log(`[MQTT] Prewarming a read-only ${MQTT_PREWARM_HOLD_SECONDS}s connection for ${address}`);
         await this.manager.prepareLockConnection(address, MQTT_PREWARM_HOLD_SECONDS);
       }
     } else if (process.env.MQTT_DEBUG == "1") {
