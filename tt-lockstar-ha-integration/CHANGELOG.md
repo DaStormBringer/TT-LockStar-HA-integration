@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.64] - 2026-07-15
+
+- Replace the first-run USB-dongle and `hci0` instructions with transport-neutral setup guidance that leads with ESPHome Bluetooth Proxy while retaining the supported direct Bluetooth transports.
+- Rebuild the committed Home Assistant Ingress frontend so the deployed setup screen matches the updated source and add-on documentation.
+- Publish the corrected repository metadata and root development-container workflow under the `TT-LockStar-HA-integration` name.
+
 ## [0.1.0-alpha.63] - 2026-07-15
 
 - Correct the project name from `TT-LockStar-HA-intergration` to `TT-LockStar-HA-integration` across local paths, package names, manifests, generated Ingress HTML, and current documentation.

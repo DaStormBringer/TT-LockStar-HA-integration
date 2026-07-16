@@ -11,7 +11,7 @@
             
             <h2 class="display-1 font-weight-bold mb-4 white--text">Add Your TTLock</h2>
             <p class="body-1 text--secondary mb-6 leading-relaxed">
-              Pair and operate your smart locks locally. To get started, make sure your Bluetooth adapter is configured and wake up your lock's keypad so it starts broadcasting.
+              Pair and operate your smart locks locally. To get started, configure a supported Bluetooth transport and wake up your lock's keypad so it starts broadcasting.
             </p>
 
             <v-divider class="my-6"></v-divider>
@@ -20,8 +20,8 @@
               <v-icon small left color="blue">mdi-alert-circle-outline</v-icon> Setup Steps:
             </h3>
             <ul class="text-left body-2 text--secondary pl-5 mb-8 spacing-y">
-              <li>Ensure your USB Bluetooth dongle is plugged into your HA device.</li>
-              <li>Configure the correct adapter (e.g. <code>hci0</code>) in the Add-on Configuration tab.</li>
+              <li>Configure an ESPHome Bluetooth Proxy or another supported Bluetooth transport in the Add-on Configuration tab.</li>
+              <li>Confirm the configured transport is connected and receiving nearby Bluetooth advertisements.</li>
               <li><strong>Wake up the lock:</strong> Press any key on your lock's keypad to light it up.</li>
               <li>Click the button below to scan and pair your lock.</li>
             </ul>

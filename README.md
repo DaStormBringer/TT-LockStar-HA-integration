@@ -15,7 +15,7 @@ Detailed release and supervised hardware-test history is in [UPDATE_NOTES.md](tt
 
 ## Current status
 
-- Add-on version: `0.1.0-alpha.63`
+- Add-on version: `0.1.0-alpha.64`
 - Home Assistant stage: `experimental`
 - Development branch: `main`
 - Target: Home Assistant on Linux
@@ -90,6 +90,14 @@ This project uses Semantic Versioning:
 
 Git release tags use the matching `vVERSION` form, beginning with `v0.1.0-alpha.1`.
 
+## Development container
+
+Open the repository root in Visual Studio Code and run **Dev Containers: Reopen in Container**. The development container uses Home Assistant's current app-development image with Node.js 24, Python 3.13, ShellCheck, and the Home Assistant Supervisor tooling.
+
+From **Terminal > Run Task**, use **Start Home Assistant** to start the local development instance at `http://localhost:7123/`. The remaining tasks install, start, rebuild, and follow logs for `tt-lockstar-ha-integration`.
+
+The container covers local builds and non-hardware tests. Bluetooth and physical lock validation must still run on the supervised Linux test host with a manual entry method available.
+
 ## Conservative first-test procedure
 
 1. Keep the existing TTLock app/G2 path and a manual entry method available.
@@ -110,8 +118,8 @@ The validated local `amd64` build command is:
 
 ```sh
 docker build \
-  --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest \
-  --tag tt-lockstar-ha-integration:0.1.0-alpha.63 \
+  --platform linux/amd64 \
+  --tag tt-lockstar-ha-integration:0.1.0-alpha.64 \
   ./tt-lockstar-ha-integration
 ```
 

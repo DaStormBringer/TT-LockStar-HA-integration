@@ -2,8 +2,8 @@
 
 1. **Install Add-on**: Install the add-on from your supervisor panel (building the Docker image might take a few minutes on slower hardware).
 2. **Set up Bluetooth**: 
-   - Connect a compatible Bluetooth USB dongle to your Home Assistant device (recommended for the best range and stability).
-   - In the **Configuration** tab, set the `bluetooth_adapter` option to match your adapter (usually `hci0` or `hci1`).
+   - In the **Configuration** tab, select a supported Bluetooth transport. For ESPHome Bluetooth Proxy, set `bluetooth_transport` to `esphome_proxy` and provide the proxy endpoints in `esphome_proxy_hosts`.
+   - Confirm the selected transport is connected and receiving nearby Bluetooth advertisements.
 3. **Configure MQTT**: Make sure you have an MQTT broker installed and configured in Home Assistant (such as Mosquitto broker).
 4. **Wake up the lock**: Press any key on your lock's keypad so it lights up and starts broadcasting BLE signals.
 5. **Open Web UI & Pair**: Open the Ingress Web UI from the sidebar or the add-on page, and click the bold **Scan for Locks** button in the setup assistant to find and pair your lock.

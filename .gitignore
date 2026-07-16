@@ -1,0 +1,8 @@
+# Local Codex configuration may contain private MCP endpoints and credentials.
+.codex/config.toml
+
+# Local dependency, test, and runtime artifacts.
+node_modules/
+__pycache__/
+*.py[cod]
+*.log

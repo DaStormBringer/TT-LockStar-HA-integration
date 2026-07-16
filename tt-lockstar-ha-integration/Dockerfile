@@ -1,5 +1,5 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
-FROM $BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
+FROM ${BUILD_FROM}
 
 ENV LANG=C.UTF-8
 
@@ -33,8 +33,10 @@ RUN cd /app \
     && npm prune --ignore-scripts --omit=dev \
     && rm -rf /tmp/ttlock-sdk-js /root/.npm
 
-# here we should just copy the /app contents to a run image with nodejs and other requirements only
-
 ENTRYPOINT ["/app/start.sh"]
 
-LABEL io.hass.version="VERSION" io.hass.type="app" io.hass.arch="aarch64|amd64"
+LABEL \
+    org.opencontainers.image.title="Home Assistant App: TT LockStar HA (Experimental)" \
+    org.opencontainers.image.description="Very experimental local Bluetooth integration of the offline TTLock SDK into Home Assistant" \
+    org.opencontainers.image.source="https://github.com/DaStormBringer/TT-LockStar-HA-integration" \
+    org.opencontainers.image.licenses="GPL-3.0"

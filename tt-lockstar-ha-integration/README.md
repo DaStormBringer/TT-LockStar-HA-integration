@@ -9,7 +9,7 @@ Home Assistant slug: `tt-lockstar-ha-integration`. This corrected slug is a new 
 
 Read the repository [merge and validation notes](../MERGE_NOTES.md) before installation.
 
-Current version: `0.1.0-alpha.63`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
+Current version: `0.1.0-alpha.64`. The project uses Semantic Versioning and will remain in prerelease status until supervised lock-hardware testing is complete.
 
 Current development prioritizes discovery, evidence-backed state, reliable lock/unlock, settings, PINs, and cards. Biometric fingerprint enrollment and management are unvalidated and intentionally last in the implementation and hardware-test order.
 
